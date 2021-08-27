@@ -39,7 +39,7 @@ traitSummaries <- list(
       )
     ),
     flowLayout(
-      bsCollapsePanel(title = "View selected clone(s)",
+      bsCollapsePanel(title = "Select clones from list",
         selectizeInput(
           "clonesOfInterest",
           "",
