@@ -1,5 +1,5 @@
 isMissing <- function(x){
-  x %in% c(NA, "NA", "", "NR")
+  x %in% c(NA, "NA", "", "NR", NaN)
 }
 
 isNumericLike <- function(vector){
