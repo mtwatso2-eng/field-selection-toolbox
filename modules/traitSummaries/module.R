@@ -20,46 +20,60 @@ traitSummaries <- list(
     flowLayout(
       pickerInput(
         "trialsOfInterest",
-        "What trial are you rating?",
+        "Select clones by trial",
         choices = cache$trials$studyName %>% unique,
         multiple = T,
         options = list(`actions-box` = TRUE)
       ),
-      fluidRow(
-        selectizeInput(
-          "clonesOfInterest",
-          "What clone(s) are you rating?",
-          choices = cache$observations$germplasmName %>% unique() %>% sort(),
-          multiple = T
-        ),
-        actionButton(
-          "clonesOfInterestPrevious",
-          label = HTML("<i class='glyphicon glyphicon-arrow-left'></i>")
-        ),
-        actionButton(
-          "clonesOfInterestNext",
-          label = HTML("<i class='glyphicon glyphicon-arrow-right'></i>")
-        ),
-      ),
       pickerInput(
         "traitSummaryTraits",
-        "View what traits?",
+        "Select summary trait(s)",
         choices = NULL,
         multiple = T,
         options = list(`actions-box` = TRUE)
       ),
       pickerInput(
         "traitSummaryPlotTrait",
-        "Plot which summary trait?",
+        "Select trait for plot",
         choices = NULL
       )
+    ),
+    flowLayout(
+      bsCollapsePanel(title = "View selected clone(s)",
+        selectizeInput(
+          "clonesOfInterest",
+          "",
+          choices = NULL,
+          multiple = T,
+          options = list("line-height" = 1)
+        )
+      ),
+      fluidRow(
+      actionButton(
+        "clonesOfInterestPrevious",
+        label = HTML("<i class='glyphicon glyphicon-arrow-left'></i>")
+      ),
+      actionButton(
+        "clonesOfInterestNext",
+        label = HTML("<i class='glyphicon glyphicon-arrow-right'></i>")
+      )
+    )
     ),
     DTOutput("resultsTable"),
     plotlyOutput("resultsPlot")
   ),
   
   "server" = function(input, output, session){
-  
+    
+    withProgress(message = "Loading clones", {
+      updateSelectizeInput(
+        session,
+        "clonesOfInterest",
+        choices = cache$observations$germplasmName %>% unique() %>% sort()
+      )
+    })
+
+    
     observeEvent(input$trialsOfInterest, {withProgress(message = "Loading trial layout data", {
       germplasmChoices <<- cache$trials %>%
         filter(studyName %in% input$trialsOfInterest) %$%
@@ -72,7 +86,6 @@ traitSummaries <- list(
       updatePickerInput(
         session = session, 
         inputId = "clonesOfInterest",
-        # choices = germplasmChoices,
         selected = germplasmChoices
       )
     })})
@@ -125,7 +138,7 @@ traitSummaries <- list(
       trialPosition <<- trialPosition + 1
     })})
     
-    observeEvent(c(input$traitSummaryTraits, input$clonesOfInterest), {
+    observeEvent(c(input$traitSummaryTraits, input$clonesOfInterest, input$traitSummaryPlotTrait), {
       
       resultsTable <- tabulateResults(input, cache, session)
       
