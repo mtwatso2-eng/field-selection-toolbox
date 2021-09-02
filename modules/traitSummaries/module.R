@@ -59,8 +59,12 @@ traitSummaries <- list(
       )
     )
     ),
-    DTOutput("resultsTable"),
-    plotlyOutput("resultsPlot")
+    mainPanel(
+      tabsetPanel(
+        tabPanel("Table", DTOutput("resultsTable")),
+        tabPanel("Plot", plotlyOutput("resultsPlot"))
+      )
+    )
   ),
   
   "server" = function(input, output, session){
