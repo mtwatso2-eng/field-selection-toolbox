@@ -3,14 +3,10 @@ traitSummaries <- list(
   "ui" = fluidPage(
     bsCollapsePanel(title = "Advanced Options",
       flowLayout(
-        checkboxInput(
-          "germplasmNamesColumnNames",
-          "Use germplasm names as column names?"
-        ),
         pickerInput(
-          "traitSummaryTrials",
-          "Which trials do you want to use trait data from?",
-          choices = NULL,
+          "traitSummaryTraits",
+          "Select summary trait(s) manually",
+          choices = cache$traitNames,
           multiple = T,
           options = list(`actions-box` = TRUE)
         ),
@@ -26,11 +22,11 @@ traitSummaries <- list(
         options = list(`actions-box` = TRUE)
       ),
       pickerInput(
-        "traitSummaryTraits",
-        "Select summary trait(s)",
-        choices = NULL,
-        multiple = T,
-        options = list(`actions-box` = TRUE)
+        "traitSummaryTraitList",
+        "Select trait list",
+        choices = c("Summary Traits", "Agronomic Traits", "Compositional Traits", "Sensory Traits"),
+        selected = "Summary Traits",
+        multiple = T
       ),
       pickerInput(
         "traitSummaryPlotTrait",
@@ -46,6 +42,10 @@ traitSummaries <- list(
           choices = NULL,
           multiple = T,
           options = list("line-height" = 1)
+        ),
+        textInput(
+          "clonesOfInterestPasted",
+          "Paste clones from spreadsheet"
         )
       ),
       fluidRow(
@@ -59,11 +59,9 @@ traitSummaries <- list(
       )
     )
     ),
-    mainPanel(
-      tabsetPanel(
-        tabPanel("Table", DTOutput("resultsTable")),
-        tabPanel("Plot", plotlyOutput("resultsPlot"))
-      )
+    tabsetPanel(
+      tabPanel("Table", DTOutput("resultsTable")),
+      tabPanel("Plot", plotlyOutput("resultsPlot"))
     )
   ),
   
@@ -73,50 +71,52 @@ traitSummaries <- list(
       updateSelectizeInput(
         session,
         "clonesOfInterest",
-        choices = cache$observations$germplasmName %>% unique() %>% sort()
+        choices = cache$observations$germplasmName %>% unique() %>% sort() %>% getGenericGermplasmName(),
+        selected = NULL
       )
     })
 
-    
     observeEvent(input$trialsOfInterest, {withProgress(message = "Loading trial layout data", {
       germplasmChoices <<- cache$trials %>%
         filter(studyName %in% input$trialsOfInterest) %$%
         map(
-          studyDbId, 
+          studyDbId,
           ~ try(brapi_get_studies_studyDbId_layouts(spbase, .x, pageSize = 9999999)$germplasmName)
         ) %>%
-        unlist()
+        unlist() %>%
+        getGenericGermplasmName()
       trialPosition <<- 1
-      updatePickerInput(
+      updateSelectizeInput(
         session = session, 
         inputId = "clonesOfInterest",
         selected = germplasmChoices
       )
     })})
+    
+    observeEvent(input$clonesOfInterestPasted, {
+      pastedCloneList <- input$clonesOfInterestPasted %>%
+        {strsplit(., " ", fixed = T)[[1]]} %>%
+        unique() %>%
+        getGenericGermplasmName() %>%
+        {.[. %in% (cache$observations$germplasmName %>% unique() %>% sort() %>% getGenericGermplasmName())]}
       
-    observeEvent(input$clonesOfInterest, {
-      trialChoices <<- cache$observations %>%
-            filter(germplasmName %in% input$clonesOfInterest) %$%
-            unique(studyName)
-      updatePickerInput(
+      updateSelectizeInput(
         session = session,
-        inputId = "traitSummaryTrials",
-        choices = trialChoices,
-        selected = trialChoices
+        inputId = "clonesOfInterest",
+        selected = pastedCloneList
       )
     })
     
-    observeEvent(input$traitSummaryTrials, {
+    observeEvent(c(input$traitSummaryTraitList), {
       updatePickerInput(
         session = session,
         inputId = "traitSummaryTraits",
-        choices = cache$traitNames,
-        selected = defaultTraits[defaultTraits %in% cache$traitNames]
+        selected = traitLists[input$traitSummaryTraitList] %>% unlist() %>% {.[. %in% cache$traitNames]} %>% unname()
       )
       updatePickerInput(
         session = session,
         inputId = "traitSummaryPlotTrait",
-        choices = defaultTraits[defaultTraits %in% cache$traitNames]
+        choices = traitLists[input$traitSummaryTraitList] %>% unlist() %>% {.[. %in% cache$traitNames]} %>% unname()
       )
     })
     
@@ -142,8 +142,8 @@ traitSummaries <- list(
       trialPosition <<- trialPosition + 1
     })})
     
-    observeEvent(c(input$traitSummaryTraits, input$clonesOfInterest, input$traitSummaryPlotTrait), {
-      
+    observeEvent(c(input$traitSummaryTraits, input$clonesOfInterest, input$clonesOfInterestPasted, input$traitSummaryPlotTrait), {
+
       resultsTable <- tabulateResults(input, cache, session)
       
       output$resultsTable <- renderDT(

@@ -4,8 +4,9 @@ options(warn = -1)
 source("global.R")
 sapply(list.files(path = "modules", recursive = TRUE, pattern = "^.*\\.R$", full.names = TRUE), source)
 
-ui <- navbarPage(id = "tabs", collapsible = TRUE, title = "Field Selection Toolbox",
-  modulePanel("Trait Summaries", value = "traitSummaries"),
+ui <- navbarPage(id = "tabs", collapsible = TRUE, title = "Trait Toolbox",
+  modulePanel("Field Trait Summaries", value = "traitSummaries"),
+  modulePanel("Cross Predictor", value = "crossPredictor"),
   tags$head(tags$link(rel="shortcut icon", href="https://thumbs.dreamstime.com/b/sweet-potato-white-background-sweet-potato-batata-white-background-isolated-103677860.jpg"))
 )
   

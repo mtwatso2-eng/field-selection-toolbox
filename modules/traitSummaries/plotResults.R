@@ -4,12 +4,12 @@ plotResults <- function(resultsTable, input, cache, session){
     return(NULL)
    
   thisPlot <- resultsTable %>%
-    select(germplasmName, !!sym(input$traitSummaryPlotTrait)) %>%
+    select(GenericGermplasmName, !!sym(input$traitSummaryPlotTrait)) %>%
     {
-      ggplot(., aes(x = reorder(germplasmName, -!!sym(input$traitSummaryPlotTrait)), y = !!sym(input$traitSummaryPlotTrait))) +
+      ggplot(., aes(x = reorder(GenericGermplasmName, -!!sym(input$traitSummaryPlotTrait)), y = !!sym(input$traitSummaryPlotTrait))) +
         geom_bar(stat="identity") +
         ggtitle(paste(paste(collapse = ", "), input$traitSummaryPlotTrait, "by clone")) +
-        xlab("germplasmName") +
+        xlab("GenericGermplasmName") +
         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
     } %>%
     ggplotly()
